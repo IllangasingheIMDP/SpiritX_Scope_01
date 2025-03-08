@@ -21,7 +21,25 @@ const User = {
       [id]
     );
     return rows[0];
+  },
+
+  async checkUsernameAvailability(username) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT COUNT(*) as count FROM users WHERE username = ?',
+        [username]
+      );
+      return rows[0].count === 0; // Return true if username is available (count = 0)
+    } catch (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
   }
-};
+
+  
+
+
+}
+
+
 
 module.exports = User;

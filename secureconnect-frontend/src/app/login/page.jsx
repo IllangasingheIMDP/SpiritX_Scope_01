@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Login() {
@@ -9,14 +9,34 @@ export default function Login() {
   const [generalError, setGeneralError] = useState('');
   const router = useRouter();
 
+  // Validation function
   const validate = () => {
     const newErrors = {};
-    if (!username) newErrors.username = 'Username is required';
-    if (!password) newErrors.password = 'Password is required';
+
+    if (!username) {
+      newErrors.username = 'Username is required';
+    }
+    if (!password) {
+      newErrors.password = 'Password is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Real-time validation with useEffect
+  useEffect(() => {
+    validate();
+  }, [username, password]);
+
+  // Handle input changes
+  const handleChange = (field) => (e) => {
+    const value = e.target.value;
+    if (field === 'username') setUsername(value);
+    if (field === 'password') setPassword(value);
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setGeneralError('');
@@ -38,13 +58,6 @@ export default function Login() {
         setGeneralError('Error logging in');
       }
     }
-  };
-
-  const handleChange = (field) => (e) => {
-    const value = e.target.value;
-    if (field === 'username') setUsername(value);
-    if (field === 'password') setPassword(value);
-    validate(); // Real-time validation
   };
 
   return (
