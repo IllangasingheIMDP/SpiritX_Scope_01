@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Signup() {
@@ -9,13 +9,24 @@ export default function Signup() {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailability, setUsernameAvailability] = useState(null);
   const router = useRouter();
 
+  // Validation function
   const validate = () => {
     const newErrors = {};
-    if (!username || username.length < 8) {
+
+    // Username validation
+    if (!username) {
+      newErrors.username = 'Username is required';
+    } else if (username.length < 8) {
       newErrors.username = 'Username must be at least 8 characters long';
+    } else if (usernameAvailability === false) {
+      newErrors.username = 'Username is already taken';
     }
+
+    // Password validation
     if (!password) {
       newErrors.password = 'Password is required';
     } else {
@@ -26,13 +37,60 @@ export default function Signup() {
         newErrors.password = 'Password must contain at least one lowercase letter, one uppercase letter, and one special character';
       }
     }
-    if (password !== confirmPassword) {
+
+    // Confirm Password validation
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Confirm Password is required';
+    } else if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Check username availability with debounce
+  useEffect(() => {
+    // Clear previous username availability status when username changes
+    setUsernameAvailability(null);
+    
+    // Don't check if username is too short
+    if (!username || username.length < 8) {
+      return;
+    }
+    
+    // Set a timeout to prevent too many API calls while typing
+    const timeout = setTimeout(async () => {
+      setIsCheckingUsername(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/auth/check-username/${username}`);
+        const data = await response.json();
+        setUsernameAvailability(data.available);
+      } catch (error) {
+        console.error('Error checking username availability:', error);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    }, 500); // 500ms debounce
+
+    // Cleanup function to clear the timeout if component unmounts or username changes
+    return () => clearTimeout(timeout);
+  }, [username]);
+
+  // Real-time validation with useEffect
+  useEffect(() => {
+    validate();
+  }, [username, password, confirmPassword, usernameAvailability]);
+
+  // Handle input changes
+  const handleChange = (field) => (e) => {
+    const value = e.target.value;
+    if (field === 'username') setUsername(value);
+    if (field === 'password') setPassword(value);
+    if (field === 'confirmPassword') setConfirmPassword(value);
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setGeneralError('');
@@ -56,12 +114,23 @@ export default function Signup() {
     }
   };
 
-  const handleChange = (field) => (e) => {
-    const value = e.target.value;
-    if (field === 'username') setUsername(value);
-    if (field === 'password') setPassword(value);
-    if (field === 'confirmPassword') setConfirmPassword(value);
-    validate(); // Real-time validation
+  // Username availability indicator
+  const renderUsernameAvailability = () => {
+    if (username.length < 8) return null;
+    
+    if (isCheckingUsername) {
+      return <p className="text-gray-500 text-sm mt-1">Checking availability...</p>;
+    }
+    
+    if (usernameAvailability === true) {
+      return <p className="text-green-500 text-sm mt-1">Username is available!</p>;
+    }
+    
+    if (usernameAvailability === false) {
+      return <p className="text-red-500 text-sm mt-1">Username is already taken</p>;
+    }
+    
+    return null;
   };
 
   return (
@@ -86,6 +155,7 @@ export default function Signup() {
             onChange={handleChange('username')}
             className="border p-2 w-full rounded"
           />
+          {renderUsernameAvailability()}
           {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
         </div>
         <div className="mb-4">
@@ -112,7 +182,7 @@ export default function Signup() {
         <button
           type="submit"
           className="bg-blue-500 text-white p-2 w-full rounded hover:bg-blue-600 disabled:bg-gray-400"
-          disabled={Object.keys(errors).length > 0 || !username || !password || !confirmPassword}
+          disabled={Object.keys(errors).length > 0 || !username || !password || !confirmPassword || isCheckingUsername || usernameAvailability === false}
         >
           Sign Up
         </button>
@@ -122,6 +192,8 @@ export default function Signup() {
 }
 
 function PasswordStrengthIndicator({ password }) {
+  if (!password) return null; // Do not render anything if password is empty
+
   const getStrength = () => {
     let strength = 0;
     if (password.length >= 8) strength++;

@@ -55,6 +55,37 @@ const login = async (req, res) => {
   res.json({ message: 'Logged in successfully' });
 };
 
+
+
+
+const checkUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    // Validate username length (you may use your existing validation utility)
+    if (username.length < 8) {
+      return res.status(400).json({ 
+        available: false, 
+        message: 'Username must be at least 8 characters long' 
+      });
+    }
+    
+    // Check if username exists using the model
+    const isAvailable = await User.checkUsernameAvailability(username);
+    
+    return res.json({
+      available: isAvailable,
+      message: isAvailable ? 'Username is available' : 'Username is already taken'
+    });
+  } catch (error) {
+    console.error('Error checking username:', error);
+    return res.status(500).json({ 
+      available: false, 
+      message: 'Server error while checking username' 
+    });
+  }
+};
+
 const getUser = async (req, res) => {
   const user = await User.findById(req.userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
@@ -69,4 +100,4 @@ const logout = (req, res) => {
   res.json({ message: 'Logged out successfully' });
 };
 
-module.exports = { signup, login, getUser, logout };
+module.exports = { signup, login, getUser, logout,checkUsername };
