@@ -66,6 +66,20 @@ Database: MySQL
 
 Session Management: JWT / Cookies
 
+
+
+project setup
+
+for frontend
+   cd secureconnect-frontend
+   npm i
+   npm run dev
+
+for backend
+   cd secureconnect-backend
+   npm i
+   npm run start
+
 Contributors
      1.Ashindu Dissanayake
      2.Dasun Illangasinghe
