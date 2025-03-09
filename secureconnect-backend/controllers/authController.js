@@ -55,9 +55,6 @@ const login = async (req, res) => {
   res.json({ message: 'Logged in successfully' });
 };
 
-
-
-
 const checkUsername = async (req, res) => {
   try {
     const { username } = req.params;
@@ -73,9 +70,18 @@ const checkUsername = async (req, res) => {
     // Check if username exists using the model
     const isAvailable = await User.checkUsernameAvailability(username);
     
+    if (!isAvailable) {
+      const suggestedUsername = await User.suggestUsername(username);
+      return res.json({
+        available: false,
+        message: 'Username is already taken',
+        suggestedUsername
+      });
+    }
+    
     return res.json({
-      available: isAvailable,
-      message: isAvailable ? 'Username is available' : 'Username is already taken'
+      available: true,
+      message: 'Username is available'
     });
   } catch (error) {
     console.error('Error checking username:', error);
@@ -100,4 +106,4 @@ const logout = (req, res) => {
   res.json({ message: 'Logged out successfully' });
 };
 
-module.exports = { signup, login, getUser, logout,checkUsername };
+module.exports = { signup, login, getUser, logout, checkUsername };
