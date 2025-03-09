@@ -20,7 +20,10 @@ export default function Signup() {
     password: false,
     confirmPassword: false,
   });
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const router = useRouter();
+  let timeout;
 
   // Check password requirements whenever password changes
   useEffect(() => {
@@ -31,13 +34,15 @@ export default function Signup() {
     });
   }, [password]);
 
-  // Check username requirements
+  // Check username requirements and availability
   useEffect(() => {
     if (isFocused.username || username.length > 0) {
       if (username.length < 8) {
         setErrors(prev => ({ ...prev, username: 'Username must be at least 8 characters long' }));
+        setUsernameAvailable(null);
       } else {
         setErrors(prev => ({ ...prev, username: '' }));
+        checkUsernameAvailability(username);
       }
     }
   }, [username, isFocused.username]);
@@ -53,22 +58,42 @@ export default function Signup() {
     }
   }, [password, confirmPassword, isFocused.confirmPassword]);
 
+  const checkUsernameAvailability = (username) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(async () => {
+      setIsCheckingUsername(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/auth/check-username/${username}`);
+        const data = await response.json();
+        setUsernameAvailable(data.available);
+        setErrors(prev => ({ ...prev, username: data.message }));
+      } catch (error) {
+        setUsernameAvailable(false);
+        setErrors(prev => ({ ...prev, username: 'Error checking username availability' }));
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    }, 500);
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!username || username.length < 8) {
       newErrors.username = 'Username must be at least 8 characters long';
+    } else if (usernameAvailable === false) {
+      newErrors.username = 'Username is already taken';
     }
-    
+
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (!passwordRequirements.lowercase || !passwordRequirements.uppercase || !passwordRequirements.special) {
       newErrors.password = 'Password must meet all requirements';
     }
-    
+
     if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -163,11 +188,14 @@ export default function Signup() {
                   placeholder="Enter your username (min. 8 characters)"
                 />
                 {(isFocused.username || username.length > 0) && (
-                  <p className={`text-sm mt-1 animate-fadeIn ${username.length >= 8 ? 'text-green-400' : 'text-pink-500'}`}>
-                    {username.length >= 8 ? '✓ Username is valid' : 'Username must be at least 8 characters long'}
+                  <p className={`text-sm mt-1 animate-fadeIn ${username.length >= 8 && usernameAvailable ? 'text-green-400' : 'text-pink-500'}`}>
+                    {username.length >= 8 && usernameAvailable ? '✓ Username is available' : errors.username}
                   </p>
                 )}
               </div>
+              {isCheckingUsername && (
+                <p className="text-sm mt-1 text-yellow-400 animate-fadeIn">Checking username availability...</p>
+              )}
             </div>
             
             <div className="space-y-1">
