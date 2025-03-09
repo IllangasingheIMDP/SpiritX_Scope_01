@@ -35,6 +35,10 @@ export default function Login() {
     const value = e.target.value;
     if (field === 'username') setUsername(value);
     if (field === 'password') setPassword(value);
+    // Clear the error for this field when typing
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: '' });
+    }
   };
 
   // Handle form submission
@@ -63,18 +67,6 @@ export default function Login() {
       }
     }
   };
-
-  const handleChange = (field) => (e) => {
-    const value = e.target.value;
-    if (field === 'username') setUsername(value);
-    if (field === 'password') setPassword(value);
-    // Clear the error for this field when typing
-    if (errors[field]) {
-      setErrors({ ...errors, [field]: '' });
-    }
-  };
-
-
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-black bg-gradient-to-br from-gray-900 to-black">

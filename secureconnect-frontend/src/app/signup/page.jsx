@@ -9,7 +9,6 @@ export default function Signup() {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [success, setSuccess] = useState(false);
-
   const [isLoading, setIsLoading] = useState(false);
   const [passwordRequirements, setPasswordRequirements] = useState({
     lowercase: false,
@@ -54,92 +53,26 @@ export default function Signup() {
     }
   }, [password, confirmPassword, isFocused.confirmPassword]);
 
-
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [usernameAvailability, setUsernameAvailability] = useState(null);
-  const router = useRouter();
-
-  // Validation function
-
   const validate = () => {
     const newErrors = {};
-
-    // Username validation
-    if (!username) {
-      newErrors.username = 'Username is required';
-    } else if (username.length < 8) {
+    if (!username || username.length < 8) {
       newErrors.username = 'Username must be at least 8 characters long';
-    } else if (usernameAvailability === false) {
-      newErrors.username = 'Username is already taken';
     }
-
+    
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (!passwordRequirements.lowercase || !passwordRequirements.uppercase || !passwordRequirements.special) {
       newErrors.password = 'Password must meet all requirements';
     }
-
     
     if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
-
-
-    // Confirm Password validation
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Confirm Password is required';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Check username availability with debounce
-  useEffect(() => {
-    // Clear previous username availability status when username changes
-    setUsernameAvailability(null);
-    
-    // Don't check if username is too short
-    if (!username || username.length < 8) {
-      return;
-    }
-    
-    // Set a timeout to prevent too many API calls while typing
-    const timeout = setTimeout(async () => {
-      setIsCheckingUsername(true);
-      try {
-        const response = await fetch(`http://localhost:5000/api/auth/check-username/${username}`);
-        const data = await response.json();
-        setUsernameAvailability(data.available);
-      } catch (error) {
-        console.error('Error checking username availability:', error);
-      } finally {
-        setIsCheckingUsername(false);
-      }
-    }, 500); // 500ms debounce
-
-    // Cleanup function to clear the timeout if component unmounts or username changes
-    return () => clearTimeout(timeout);
-  }, [username]);
-
-  // Real-time validation with useEffect
-  useEffect(() => {
-    validate();
-  }, [username, password, confirmPassword, usernameAvailability]);
-
-  // Handle input changes
-  const handleChange = (field) => (e) => {
-    const value = e.target.value;
-    if (field === 'username') setUsername(value);
-    if (field === 'password') setPassword(value);
-    if (field === 'confirmPassword') setConfirmPassword(value);
-  };
-
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setGeneralError('');
@@ -165,7 +98,6 @@ export default function Signup() {
       }
     }
   };
-
 
   const handleChange = (field) => (e) => {
     const value = e.target.value;
@@ -203,6 +135,15 @@ export default function Signup() {
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
               </svg>
               Signup successful! Redirecting to login...
+            </div>
+          )}
+          
+          {generalError && (
+            <div className="bg-red-900/50 text-red-300 p-3 mb-6 rounded-lg border border-red-800 animate-fadeIn flex items-center">
+              <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
+              </svg>
+              {generalError}
             </div>
           )}
           
@@ -300,15 +241,6 @@ export default function Signup() {
                 )}
               </div>
             </div>
-
-            {generalError && (
-            <div className="bg-red-900/50 text-red-300 p-3 mb-6 rounded-lg border border-red-800 animate-fadeIn flex items-center">
-              <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
-              </svg>
-              {generalError}
-            </div>
-          )}
             
             <button
               type="submit"
@@ -347,88 +279,11 @@ export default function Signup() {
           </form>
         </div>
       </div>
-
-  // Username availability indicator
-  const renderUsernameAvailability = () => {
-    if (username.length < 8) return null;
-    
-    if (isCheckingUsername) {
-      return <p className="text-gray-500 text-sm mt-1">Checking availability...</p>;
-    }
-    
-    if (usernameAvailability === true) {
-      return <p className="text-green-500 text-sm mt-1">Username is available!</p>;
-    }
-    
-    if (usernameAvailability === false) {
-      return <p className="text-red-500 text-sm mt-1">Username is already taken</p>;
-    }
-    
-    return null;
-  };
-
-  return (
-    <div className="container mx-auto p-4 max-w-md">
-      <h1 className="text-2xl font-bold mb-4 text-center">Sign Up</h1>
-      {success && (
-        <div className="bg-green-100 text-green-700 p-2 mb-4 rounded">
-          Signup successful! Redirecting to login...
-        </div>
-      )}
-      {generalError && (
-        <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">
-          {generalError}
-        </div>
-      )}
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Username</label>
-          <input
-            type="text"
-            value={username}
-            onChange={handleChange('username')}
-            className="border p-2 w-full rounded"
-          />
-          {renderUsernameAvailability()}
-          {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={handleChange('password')}
-            className="border p-2 w-full rounded"
-          />
-          {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-          <PasswordStrengthIndicator password={password} />
-        </div>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Confirm Password</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={handleChange('confirmPassword')}
-            className="border p-2 w-full rounded"
-          />
-          {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-500 text-white p-2 w-full rounded hover:bg-blue-600 disabled:bg-gray-400"
-          disabled={Object.keys(errors).length > 0 || !username || !password || !confirmPassword || isCheckingUsername || usernameAvailability === false}
-        >
-          Sign Up
-        </button>
-      </form>
-
     </div>
   );
 }
 
 function PasswordStrengthIndicator({ password }) {
-  if (!password) return null; // Do not render anything if password is empty
-
   const getStrength = () => {
     let strength = 0;
     if (password.length >= 8) strength++;
