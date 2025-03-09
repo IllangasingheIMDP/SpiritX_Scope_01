@@ -33,13 +33,18 @@ const User = {
     } catch (error) {
       throw new Error(`Database error: ${error.message}`);
     }
+  },
+
+  async suggestUsername(username) {
+    let suggestedUsername;
+    let isAvailable = false;
+    while (!isAvailable) {
+      const randomNumber = Math.floor(1000 + Math.random() * 9000); // Random 4 digit number
+      suggestedUsername = `${username}${randomNumber}`;
+      isAvailable = await this.checkUsernameAvailability(suggestedUsername);
+    }
+    return suggestedUsername;
   }
-
-  
-
-
-}
-
-
+};
 
 module.exports = User;

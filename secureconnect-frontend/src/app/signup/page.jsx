@@ -22,6 +22,7 @@ export default function Signup() {
   });
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [suggestedUsername, setSuggestedUsername] = useState('');
   const router = useRouter();
   let timeout;
 
@@ -40,6 +41,7 @@ export default function Signup() {
       if (username.length < 8) {
         setErrors(prev => ({ ...prev, username: 'Username must be at least 8 characters long' }));
         setUsernameAvailable(null);
+        setSuggestedUsername('');
       } else {
         setErrors(prev => ({ ...prev, username: '' }));
         checkUsernameAvailability(username);
@@ -67,9 +69,15 @@ export default function Signup() {
         const data = await response.json();
         setUsernameAvailable(data.available);
         setErrors(prev => ({ ...prev, username: data.message }));
+        if (!data.available && data.suggestedUsername) {
+          setSuggestedUsername(data.suggestedUsername);
+        } else {
+          setSuggestedUsername('');
+        }
       } catch (error) {
         setUsernameAvailable(false);
         setErrors(prev => ({ ...prev, username: 'Error checking username availability' }));
+        setSuggestedUsername('');
       } finally {
         setIsCheckingUsername(false);
       }
@@ -195,6 +203,9 @@ export default function Signup() {
               </div>
               {isCheckingUsername && (
                 <p className="text-sm mt-1 text-yellow-400 animate-fadeIn">Checking username availability...</p>
+              )}
+              {suggestedUsername && !usernameAvailable && (
+                <p className="text-sm mt-1 text-cyan-400 animate-fadeIn">Suggested Username: {suggestedUsername}</p>
               )}
             </div>
             
